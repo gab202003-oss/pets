@@ -42,6 +42,7 @@
   }
 
   .card {
+    text-decoration: none;
     background: white;
     border-radius: 16px;
     padding: 24px 28px;
@@ -144,9 +145,12 @@
 
       container.innerHTML = '';
       types.forEach((name, i) => {
-        const card = document.createElement('div');
+        const card = document.createElement('a');
         card.className = 'card';
         card.style.animationDelay = (i * 80) + 'ms';
+        card.href = 'https://www.google.com/search?q=' + encodeURIComponent(name + ' pet');
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
         card.innerHTML = '<div class="emoji">' + getEmoji(name) + '</div><div class="label">' + name + '</div>';
         container.appendChild(card);
       });
