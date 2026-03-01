@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet Types</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #f0f4ff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e1e2e;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 40px;
+  }
+
+  #cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    max-width: 900px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    min-width: 120px;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: pop 0.35s ease forwards;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+  }
+
+  .card .emoji { font-size: 2.4rem; line-height: 1; }
+
+  .card .label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e1e2e;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+
+  @keyframes pop { to { opacity: 1; transform: translateY(0); } }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    border-radius: 12px;
+    padding: 16px 24px;
+    font-size: 0.9rem;
+    text-align: center;
+    max-width: 400px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🐾 Pet Types</h1>
+<p class="subtitle">Browse all available pet categories</p>
+
+<div id="cards">
+  <div>
+    <div class="spinner"></div>
+    <p style="color:#6b7280;text-align:center">Loading pet types...</p>
+  </div>
+</div>
+
+<script>
+  const ENDPOINT = 'https://maturewool-us.backendless.app/api/data/pets';
+
+  const emojiMap = {
+    cat: '🐱', dog: '🐶', bird: '🐦', fish: '🐠', rabbit: '🐰',
+    hamster: '🐹', turtle: '🐢', snake: '🐍', lizard: '🦎',
+    horse: '🐴', pig: '🐷', cow: '🐄', gorilla: '🦍', monkey: '🐒',
+    parrot: '🦜', frog: '🐸', mouse: '🐭', bear: '🐻',
+    duck: '🦆', chicken: '🐔', sheep: '🐑'
+  };
+
+  function getEmoji(name) {
+    const key = name.toLowerCase();
+    for (const [k, v] of Object.entries(emojiMap)) {
+      if (key.includes(k)) return v;
+    }
+    return '🐾';
+  }
+
+  async function loadPetTypes() {
+    const container = document.getElementById('cards');
+    try {
+      const res = await fetch(ENDPOINT);
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      const data = await res.json();
+
+      const types = data
+        .map(item => typeof item === 'string' ? item.trim() : (item.type || '').trim())
+        .filter(name => name.length >= 2 && /[a-zA-Z]/.test(name));
+
+      if (types.length === 0) throw new Error('No valid pet types found.');
+
+      container.innerHTML = '';
+      types.forEach((name, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.animationDelay = (i * 80) + 'ms';
+        card.innerHTML = '<div class="emoji">' + getEmoji(name) + '</div><div class="label">' + name + '</div>';
+        container.appendChild(card);
+      });
+
+    } catch (err) {
+      container.innerHTML = '<div class="error-box"><strong>Failed to load pet types</strong><br><br>' + err.message + '</div>';
+    }
+  }
+
+  loadPetTypes();
+</script>
+</body>
+</html>
