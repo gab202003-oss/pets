@@ -30,8 +30,65 @@
   .subtitle {
     color: #6b7280;
     font-size: 0.95rem;
+    margin-bottom: 32px;
+  }
+
+  .add-form {
+    display: flex;
+    gap: 10px;
     margin-bottom: 40px;
   }
+
+  .add-form input {
+    padding: 12px 18px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 220px;
+  }
+
+  .add-form input:focus {
+    border-color: #6366f1;
+  }
+
+  .add-form button {
+    padding: 12px 22px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .add-form button:hover { background: #4f46e5; }
+  .add-form button:active { transform: scale(0.97); }
+  .add-form button:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1e1e2e;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.3s ease;
+    z-index: 999;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #b91c1c; }
 
   #cards {
     display: flex;
@@ -42,6 +99,7 @@
   }
 
   .card {
+    text-decoration: none;
     background: white;
     border-radius: 16px;
     padding: 24px 28px;
@@ -55,7 +113,7 @@
     transform: translateY(12px);
     animation: pop 0.35s ease forwards;
     transition: transform 0.2s, box-shadow 0.2s;
-    cursor: default;
+    cursor: pointer;
   }
 
   .card:hover {
@@ -103,12 +161,19 @@
 <h1>🐾 Pet Types</h1>
 <p class="subtitle">Browse all available pet categories</p>
 
+<div class="add-form">
+  <input type="text" id="newPet" placeholder="e.g. hamster" maxlength="50" />
+  <button id="addBtn" onclick="addPetType()">+ Add Pet</button>
+</div>
+
 <div id="cards">
   <div>
     <div class="spinner"></div>
     <p style="color:#6b7280;text-align:center">Loading pet types...</p>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
   const ENDPOINT = 'https://maturewool-us.backendless.app/api/data/pets';
@@ -129,6 +194,24 @@
     return '🐾';
   }
 
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { toast.className = 'toast'; }, 3000);
+  }
+
+  function createCard(name, index) {
+    const card = document.createElement('a');
+    card.className = 'card';
+    card.style.animationDelay = (index * 80) + 'ms';
+    card.href = 'https://www.google.com/search?q=' + encodeURIComponent(name + ' pet');
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    card.innerHTML = '<div class="emoji">' + getEmoji(name) + '</div><div class="label">' + name + '</div>';
+    return card;
+  }
+
   async function loadPetTypes() {
     const container = document.getElementById('cards');
     try {
@@ -143,18 +226,48 @@
       if (types.length === 0) throw new Error('No valid pet types found.');
 
       container.innerHTML = '';
-      types.forEach((name, i) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.style.animationDelay = (i * 80) + 'ms';
-        card.innerHTML = '<div class="emoji">' + getEmoji(name) + '</div><div class="label">' + name + '</div>';
-        container.appendChild(card);
-      });
+      types.forEach((name, i) => container.appendChild(createCard(name, i)));
 
     } catch (err) {
       container.innerHTML = '<div class="error-box"><strong>Failed to load pet types</strong><br><br>' + err.message + '</div>';
     }
   }
+
+  async function addPetType() {
+    const input = document.getElementById('newPet');
+    const btn = document.getElementById('addBtn');
+    const name = input.value.trim();
+
+    if (!name) { showToast('Please enter a pet type.', true); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: name })
+      });
+
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+
+      input.value = '';
+      showToast('🐾 ' + name + ' added!');
+      await loadPetTypes(); // refresh the list
+
+    } catch (err) {
+      showToast('Failed to add pet: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '+ Add Pet';
+    }
+  }
+
+  // Allow pressing Enter to submit
+  document.getElementById('newPet').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addPetType();
+  });
 
   loadPetTypes();
 </script>
