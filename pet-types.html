@@ -289,7 +289,7 @@
   async function loadPetTypes() {
     const container = document.getElementById('cards');
     try {
-      const res = await fetch(ENDPOINT);
+      const res = await fetch(ENDPOINT + '?pageSize=100&sortBy=created%20DESC');
       if (!res.ok) throw new Error('Server returned ' + res.status);
       const data = await res.json();
 
